@@ -1,4 +1,5 @@
 const User = require('../models/users');
+const Agent = require('../models/agents');
 const bcrypt = require('bcrypt');
 const db = require('../util/database');
 const jwt = require('jsonwebtoken');
@@ -27,6 +28,39 @@ module.exports = {
         }
 
         return ret;
+
+    },
+
+    createAgent: async function({ name, phone, address }, req) {
+        const ag = await db.execute('select * from agents where mobile=?', [phone]);
+        if (ag[0][0]) {
+            const err = new Error('Agent already exists!!');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const agent = await db.execute('insert into agents (name, mobile, location) values (?, ?, ?)',
+        [name, phone, address]);
+
+        const ret = {
+            id: agent[0].insertId,
+            name: name,
+            mobile: phone,
+            location: address
+        }
+
+        return ret;
+    },
+
+    pickupSchedule: async function({ phone, no_of_cases }, req) {
+        const user = await db.execute('select * from users where mobile=?', [phone]);
+        if (!user[0][0]) {
+            const err = new Error('Invalid phone number');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        return {text: 'We have recievd your request, we will respond you shortly with details.'}
 
     },
 
