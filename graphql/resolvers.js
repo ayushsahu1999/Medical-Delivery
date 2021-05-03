@@ -1,5 +1,7 @@
 const User = require('../models/users');
 const Agent = require('../models/agents');
+const Order = require('../models/orders');
+
 const bcrypt = require('bcrypt');
 const db = require('../util/database');
 const jwt = require('jsonwebtoken');
@@ -60,8 +62,25 @@ module.exports = {
             throw err;
         }
 
+        await db.execute('insert into orders (userId, no_of_cases) values (?, ?)', [user[0][0].id, no_of_cases]);
+
         return {text: 'We have recievd your request, we will respond you shortly with details.'}
 
+    },
+
+    assignAgenttoPickup: async function ({ order_id, agent_id }, req) {
+        const order = await db.execute('select * from orders where id=? and status=?', [order_id, 0]);
+        if (!order[0][0]) {
+            const err = new Error('No such order exists.');
+            err.statusCode = 401;
+            throw err;
+        }
+
+        await db.execute('update orders set agentId=?, status=? where id=?', [agent_id, 1, order_id]);
+
+        // send the notification to the user.
+
+        return {text: 'Successful'}
     },
 
     login: async function ({mobile, password}, req) {
