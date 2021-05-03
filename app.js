@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
+const db = require('./util/database');
 
 const app = express();
 
@@ -14,11 +15,16 @@ app.use('/test', (req, res, next) => {
     res.send('<h1>Hello from Ayush Sahu</h1>');
 });
 
-app.use('/graphql', graphqlHTTP({
+app.get('/graphql', graphqlHTTP({
     schema: graphqlSchema,
     rootValue: graphqlResolver,
     graphiql: true
-}))
+}));
+
+app.get('/', (req, res, next) =>  {
+    res.send('<h1>Hello from Ayush Sahu.</h1>');
+    next();
+});
 
 app.listen(3000, () => {
     console.log('Server started successfully!');
