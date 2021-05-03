@@ -25,7 +25,7 @@ app.use('/test', (req, res, next) => {
     res.send('<h1>Hello from Ayush Sahu</h1>');
 });
 
-app.get('/graphql', graphqlHTTP({
+app.use('/graphql', graphqlHTTP({
     schema: graphqlSchema,
     rootValue: graphqlResolver,
     graphiql: true,

@@ -18,8 +18,14 @@ module.exports = buildSchema(`
         createUser(phone: String!, name: String!, address: String!, password: String!): User!
     }
 
+    type AuthData {
+        token: String!
+        id: String!
+    }
+
     type RootQuery {
         hello(name: String!): Test!
+        login(mobile: String!, password: String!): AuthData!
     }
 
     schema {
