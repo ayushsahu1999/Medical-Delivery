@@ -23,6 +23,7 @@ module.exports = buildSchema(`
         createAgent(name: String!, phone: String!, address: String!): User!
         pickupSchedule(phone: String!, no_of_cases: String): Resp!
         assignAgenttoPickup(order_id: ID!, agent_id: ID!): Resp!
+        pickupConfirmed(order_id: ID!): Resp!
     }
 
     type AuthData {
@@ -30,9 +31,16 @@ module.exports = buildSchema(`
         id: String!
     }
 
+    type Orders {
+        order_id: ID!
+        destination: String!
+        status: String!
+    }
+
     type RootQuery {
         hello(name: String!): Test!
         login(mobile: String!, password: String!): AuthData!
+        getOrders(user_id: ID!): [Orders]!
     }
 
     schema {

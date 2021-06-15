@@ -55,6 +55,7 @@ module.exports = {
     },
 
     pickupSchedule: async function({ phone, no_of_cases }, req) {
+
         const user = await db.execute('select * from users where mobile=?', [phone]);
         if (!user[0][0]) {
             const err = new Error('Invalid phone number');
@@ -83,7 +84,21 @@ module.exports = {
         return {text: 'Successful'}
     },
 
+    pickupConfirmed: async function ({ order_id }, req) {
+        const order = await db.execute('select * from orders where id=? and status=?', [order_id, 1]);
+        if (!order[0][0]) {
+            const err = new Error('Cannot find this order.');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        await db.execute('update orders set status=? where id=?', [2, order[0][0].id]);
+
+        return {text: 'Success'};
+    },
+
     login: async function ({mobile, password}, req) {
+        // console.log('mobile, password');
         const user = await db.execute('select * from users where mobile=?', [mobile]);
         if (!user[0][0]) {
             const err = new Error('Invalid mobile no.');
@@ -106,6 +121,28 @@ module.exports = {
         });
 
         return {token: token, id: user[0][0].id.toString()};
+    },
+
+    getOrders: async function({user_id}, req) {
+        const user = await db.execute('select name from users where id=?', [user_id]);
+        if (!user[0][0]) {
+            const err = new Error("cannot find this user.");
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const orders = await db.execute('select * from orders where userId=?', [user_id]);
+        
+        const ret = orders[0].map(order => {
+            return {
+                order_id: order.id,
+                destination: order.destination || "",
+                status: order.status
+            }
+        });
+
+        console.log(ret);
+        return ret;
     },
 
     hello ({name}, req) {
