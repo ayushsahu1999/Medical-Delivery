@@ -63,10 +63,23 @@ module.exports = {
             throw err;
         }
 
-        await db.execute('insert into orders (userId, no_of_cases) values (?, ?)', [user[0][0].id, no_of_cases]);
+        const order = await db.execute('insert into orders (userId, no_of_cases) values (?, ?)', [user[0][0].id, no_of_cases]);
 
-        return {text: 'We have recievd your request, we will respond you shortly with details.'}
+        return {text: order[0].insertId};
 
+    },
+
+    deleteOrder: async function({order_id}, req) {
+        const order = await db.execute('select id from orders where id=?', [order_id]);
+        if (!order[0][0]) {
+            const err = new Error('Invalid Order!');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        await db.execute('delete from orders where id=?', [order_id]);
+
+        return {text: 'Order deleted successfully!'}
     },
 
     assignAgenttoPickup: async function ({ order_id, agent_id }, req) {
@@ -141,8 +154,49 @@ module.exports = {
             }
         });
 
-        console.log(ret);
+        // console.log(ret);
         return ret;
+    },
+
+    orderDetail: async function({order_id}, req) {
+        
+        const order = await db.execute('select * from orders where id=?', [order_id]);
+        if (!order[0][0]) {
+            const err = new Error("cannot find this order.");
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const agent = undefined;
+        if (order[0][0].agentId) {
+            const ag = await db.execute('select name from agents where id=?', [order[0][0].agentId]);
+            if (!ag[0][0]) {
+                const err = new Error("This agent does not exist");
+                err.statusCode = 900;
+                throw err;
+            }
+            agent = ag[0][0].name;
+        }
+
+        var status;
+        if (order[0][0].status == 0) {
+            status = 'Scheduled for pickup'
+        } else if (order[0][0].status == 1) {
+            status = 'Picked up successfully'
+        } else if (order[0][0].status == 2) {
+            status = 'En Route'
+        } else if (order[0][0].status == 3) {
+            status = 'Delivered Successfully'
+        } else {
+            status = 'Cancelled'
+        }
+
+        return {
+            agent: agent || "Processing",
+            destination: order[0][0].destination || "Processing",
+            cases: order[0][0].no_of_cases || "Not specified",
+            status: status
+        }
     },
 
     hello ({name}, req) {
