@@ -9,6 +9,7 @@ const Order = db.execute(`create table if not exists orders (
     destination varchar(256),
     no_of_cases varchar(100) default '',
     status INT DEFAULT 0
+    promo varchar(15) default ''
 )`)
 .then(result => {
     module.exports = result;

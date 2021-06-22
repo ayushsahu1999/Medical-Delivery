@@ -25,6 +25,7 @@ module.exports = buildSchema(`
         assignAgenttoPickup(order_id: ID!, agent_id: ID!): Resp!
         pickupConfirmed(order_id: ID!): Resp!
         deleteOrder(order_id: ID!): Resp!
+        addPromoCode(code: String!): Resp!
     }
 
     type AuthData {
@@ -50,6 +51,7 @@ module.exports = buildSchema(`
         login(mobile: String!, password: String!): AuthData!
         getOrders(user_id: ID!): [Orders]!
         orderDetail(order_id: ID!): OrderDetail!
+        verifyPromoCode(code: String!): Resp!
     }
 
     schema {

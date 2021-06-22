@@ -82,6 +82,18 @@ module.exports = {
         return {text: 'Order deleted successfully!'}
     },
 
+    addPromoCode: async function({code}, req) {
+
+        var resp = 'Code added successfully!';
+        try {
+            await db.execute('insert into promocodes (code) values (?)', [code]);
+        } catch (error) {
+            resp = 'Invalid Promo Code.'
+        }
+
+        return {text: resp};
+    },
+
     assignAgenttoPickup: async function ({ order_id, agent_id }, req) {
         const order = await db.execute('select * from orders where id=? and status=?', [order_id, 0]);
         if (!order[0][0]) {
@@ -134,6 +146,17 @@ module.exports = {
         });
 
         return {token: token, id: user[0][0].id.toString()};
+    },
+
+    verifyPromoCode: async function({code}, req) {
+        const promo = await db.execute('select * from promocodes where code=?', [code]);
+        if (!promo[0][0]) {
+            const error = new Error('Invalid promo code.');
+            error.statusCode = 900;
+            throw error;
+        }
+
+        return {text: 'Promo Code applied successfully!'};
     },
 
     getOrders: async function({user_id}, req) {
