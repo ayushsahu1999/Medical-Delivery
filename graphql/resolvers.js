@@ -1,6 +1,10 @@
-const User = require('../models/users');
-const Agent = require('../models/agents');
-const Order = require('../models/orders');
+const Users = require('../models/users');
+const Agents = require('../models/agents');
+const Orders = require('../models/orders');
+const Workers = require('../models/workers');
+const Locations = require('../models/locations');
+const Promotions = require('../models/promotions');
+const AppliedPromos = require('../models/appliedpromos');
 
 const bcrypt = require('bcrypt');
 const db = require('../util/database');
@@ -77,16 +81,51 @@ module.exports = {
             throw err;
         }
 
+        // Use Socket.IO
         await db.execute('delete from orders where id=?', [order_id]);
 
         return {text: 'Order deleted successfully!'}
     },
 
-    addPromoCode: async function({code}, req) {
+    addWorkers: async function({name, mobile, mainId}, req) {
+        
+        if (mobile.length !== 10) {
+            const err = new Error('Invalid mobile number');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const main = await db.execute('select id from users where id=?', [mainId]);
+        if (!main[0][0]) {
+            const err = new Error('Wrong main id');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        try {
+            
+            await db.execute('insert into workers (mainId, name, mobile) values (?, ?, ?)', [mainId, name, mobile]);
+
+        } catch (error) {
+            const err = new Error('Something went wrong!');
+            err.statusCode = 900;
+            throw err;
+        }
+
+    },
+
+    addPromoCode: async function({expiration_date, lCredits, uCredits, newUser, no_of_orders, code, title, desc}, req) {
+
+        if (code.slice(0, 8) !== "DISCOUNT" && code.slice(0, 8) !== "CASHBACK") {
+            const err = new Error('Invalid code');
+            err.statusCode = 900;
+            throw err;
+        }
 
         var resp = 'Code added successfully!';
         try {
-            await db.execute('insert into promocodes (code) values (?)', [code]);
+            await db.execute('insert into promocodes (expiration_date, lCredits, uCredits, newUser, no_of_orders, code, title, desc) values (?, ?, ?, ?, ?, ?, ?, ?)', 
+            [expiration_date, lCredits, uCredits, newUser, no_of_orders, code, title, desc]);
         } catch (error) {
             resp = 'Invalid Promo Code.'
         }
@@ -122,8 +161,65 @@ module.exports = {
         return {text: 'Success'};
     },
 
+    applyPromoCode: async function ({userId, orderId, promoId}, req) {
+        const user = await db.execute('select id, credits from users where id=?', [userId]);
+        if (!user[0][0]) {
+            const err = new Error('Invalid user id');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const promo = await db.execute('select * from promocodes where id=?', [promoId]);
+        if (!promo[0][0]) {
+            const err = new Error('Invalid promo code.');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const today = new Date();
+        const expiration_date = new Date(promo[0][0].expiration_date);
+
+        if (today > expiration_date) {
+            const err = new Error('Invalid promo code.');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const lCred = promo[0][0].lCredits;
+        const uCred = promo[0][0].uCredits;
+
+        if (lCred || uCred) {
+            if (user[0][0].credits > uCred && user[0][0].credits < lCred) {
+                const err = new Error('Invalid promo code.');
+                err.statusCode = 900;
+                throw err;
+            }
+        }
+
+        if (promo[0][0].newUser || promo[0][0].no_of_orders) {
+            const orders = await db.execute('select count(userId) from orders where userId=?', [userId]);
+            if (orders > 0) {
+                const err = new Error('Invalid promo code.');
+                err.statusCode = 900;
+                throw err;
+            }
+
+            if (orders < no_of_orders) {
+                const err = new Error('Invalid promo code.');
+                err.statusCode = 900;
+                throw err;
+            }
+        }
+
+        // Insert into table with relationship of orders and promo codes
+        await db.execute('insert into appliedpromos (orderId, promoId) values (?, ?)', [orderId, promo[0][0].id]);
+
+        return {text: "Promo Code Applied Successfully"};
+
+    },
+
     login: async function ({mobile, password}, req) {
-        // console.log('mobile, password');
+        console.log('mobile, password');
         const user = await db.execute('select * from users where mobile=?', [mobile]);
         if (!user[0][0]) {
             const err = new Error('Invalid mobile no.');
@@ -146,6 +242,28 @@ module.exports = {
         });
 
         return {token: token, id: user[0][0].id.toString()};
+    },
+
+    workerLogin: async function({mobile}, req) {
+        const worker = await db.execute('select * from workers where mobile=?', [mobile]);
+        if (!worker[0][0]) {
+            const err = new Error('Invalid mobile number');
+            err.statusCode = 900;
+            throw err;
+        }
+
+        const mainId = worker[0][0].mainId;
+        const main = await db.execute('select id from users where id=?', [mainId]);
+
+        const token = jwt.sign({
+            userId: worker[0][0].id.toString(),
+            name: worker[0][0].name
+        }, 'somesupersecretsecret', {
+            expiresIn: '24h'
+        });
+
+        // the id should be of the main id
+        return {token: token, id: main[0][0].id.toString()};
     },
 
     verifyPromoCode: async function({code}, req) {
@@ -214,11 +332,28 @@ module.exports = {
             status = 'Cancelled'
         }
 
+        var promTitle, promDesc;
+
+        const prom = await db.execute(`select promo.title, promo.desc from appliedpromos app inner join
+                    promocodes promo on app.promoId=promo.id and app.orderId=?`, [order_id]);
+
+        if (!prom[0][0]) {
+            promTitle = "null";
+            promDesc = "null";
+        } else {
+            promTitle = prom[0][0].title;
+            promDesc = prom[0][0].desc;
+        }
+
         return {
             agent: agent || "Processing",
             destination: order[0][0].destination || "Processing",
             cases: order[0][0].no_of_cases || "Not specified",
-            status: status
+            status: status,
+            promoCode: {
+                promoTitle: promTitle,
+                promoDesc: promDesc
+            }
         }
     },
 

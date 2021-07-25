@@ -25,7 +25,9 @@ module.exports = buildSchema(`
         assignAgenttoPickup(order_id: ID!, agent_id: ID!): Resp!
         pickupConfirmed(order_id: ID!): Resp!
         deleteOrder(order_id: ID!): Resp!
-        addPromoCode(code: String!): Resp!
+        addPromoCode(expiration_date: String!, lCredits: Int, uCredits: Int, newUser: Boolean!, no_of_orders: Int, code: String!, title: String!, desc: String!): Resp!
+        applyPromoCode(userId: ID!, orderId: ID!, promoId: ID!): Resp!
+        addWorkers(name: String!, mobile: String!, mainId: ID!): Resp!
     }
 
     type AuthData {
@@ -39,19 +41,31 @@ module.exports = buildSchema(`
         status: String!
     }
 
+    type Promo {
+        promoTitle: String!
+        promoDesc: String!
+    }
+
     type OrderDetail {
         agent: String!
         destination: String!
         cases: String!
         status: String!
+        promoCode: Promo!
+    }
+
+    type GetPromoOrders {
+        id: ID!
     }
 
     type RootQuery {
         hello(name: String!): Test!
         login(mobile: String!, password: String!): AuthData!
+        workerLogin(mobile: String!): AuthData!
         getOrders(user_id: ID!): [Orders]!
         orderDetail(order_id: ID!): OrderDetail!
         verifyPromoCode(code: String!): Resp!
+        getPromoOrders: [GetPromoOrders]!
     }
 
     schema {

@@ -8,8 +8,9 @@ const Order = db.execute(`create table if not exists orders (
     FOREIGN KEY(agentId) REFERENCES agents(id) ON DELETE CASCADE ON UPDATE CASCADE,
     destination varchar(256),
     no_of_cases varchar(100) default '',
-    status INT DEFAULT 0
-    promo varchar(15) default ''
+    status INT DEFAULT 0,
+    date_of_conf varchar(10),
+    date_of_del varchar(10)
 )`)
 .then(result => {
     module.exports = result;

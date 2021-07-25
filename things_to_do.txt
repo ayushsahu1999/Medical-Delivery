@@ -1,0 +1,21 @@
+
+
+Things remaining to do in Backend rn
+
+-> Add credits functionality to users                                                                       -----  completed
+-> Locations functionality                                                                                  -----  completed
+-> Also add dates in confirm orders                                                                         -----  completed
+-> All the items in Settings Fragment
+-> Delete Orders                                                                                            -----  completed
+-> Apply Promo Codes                                                                                        -----  completed
+-> Check if PromoCode is valid for a specific users or not                                                  -----  completed
+-> Make a functionality by which admin can know if a promo code is used in an order                         -----  completed
+-> Make Logo of Application home clickable
+-> Make some functionality for estimated value
+-> Make some sub-users for a single main user
+-> A sub-user can have different locations but order is updated in similar fashion in all sub-users
+-> Disable order functionality for over-due users (3 months or above 50k)
+-> Error Handling in Android FrontEnd
+-> check if user signed up is through a refer or not.                                                       -----  in progress
+-> add feedback system.
+-> set headers in each query                                                                                -----  completed
